@@ -96,6 +96,12 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     localStorage.removeItem('exam_token');
+    // Clear all cached API responses to prevent user leakage
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('cache_')) {
+        localStorage.removeItem(key);
+      }
+    });
     setToken(null);
     setUser(null);
   };

@@ -9,7 +9,7 @@ import {
 import AdminLayout from './AdminLayout';
 
 export default function AdminExams() {
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
 
   const [exams, setExams] = useState([]);
@@ -65,26 +65,46 @@ export default function AdminExams() {
   }, []);
 
   // Fetch Exams and Students list
-  const loadInitialData = async () => {
-    try {
+  const loadInitialData = async (skipCache = false) => {
+    const userId = user?._id || user?.id || 'default';
+    const keyExams = `cache_admin_exams_${userId}`;
+    const keyStudents = `cache_admin_students_${userId}`;
+    
+    const cachedExams = localStorage.getItem(keyExams);
+    const cachedStudents = localStorage.getItem(keyStudents);
+
+    if (cachedExams && cachedStudents && !skipCache) {
+      setExams(JSON.parse(cachedExams));
+      setStudents(JSON.parse(cachedStudents));
+      setLoading(false);
+    } else {
       setLoading(true);
+    }
+
+    try {
       const [examsData, studentsData] = await Promise.all([
         api.getExams(),
         api.getStudents()
       ]);
+      const filteredStudents = studentsData.filter(s => s.role === 'student');
       setExams(examsData);
-      setStudents(studentsData.filter(s => s.role === 'student'));
+      setStudents(filteredStudents);
+
+      localStorage.setItem(keyExams, JSON.stringify(examsData));
+      localStorage.setItem(keyStudents, JSON.stringify(filteredStudents));
     } catch (err) {
       console.error('Error fetching admin exams data:', err);
-      setError('Failed to fetch scheduled exams or student list.');
+      if (!cachedExams || skipCache) {
+        setError('Failed to fetch scheduled exams or student list.');
+      }
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadInitialData();
-  }, []);
+    loadInitialData(false);
+  }, [user]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -121,7 +141,7 @@ export default function AdminExams() {
       setAssignedBatch('');
       setStudentSearch('');
       
-      loadInitialData();
+      loadInitialData(true);
       showToast('Exam configuration created successfully.', 'success');
     } catch (err) {
       console.error('Error creating exam:', err);
@@ -140,7 +160,7 @@ export default function AdminExams() {
     try {
       await api.deleteExam(deleteConfirmId);
       showToast('Exam configuration deleted successfully.', 'success');
-      loadInitialData();
+      loadInitialData(true);
     } catch (err) {
       console.error('Error deleting exam:', err);
       showToast('Failed to delete exam.', 'error');

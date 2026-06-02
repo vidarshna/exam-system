@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import { Users, Loader2, Search, SlidersHorizontal, Edit, X, Check } from 'lucide-react';
 import AdminLayout from './AdminLayout';
 
@@ -25,6 +26,7 @@ const getAvatarColor = (name, role) => {
 };
 
 export default function AdminStudents() {
+  const { user } = useAuth();
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -77,14 +79,18 @@ export default function AdminStudents() {
       
       await api.adminUpdateStudent(editingStudent._id, payload);
 
-      setStudents(prev => prev.map(s => s._id === editingStudent._id ? {
+      const updatedStudents = students.map(s => s._id === editingStudent._id ? {
         ...s,
         name: editName.trim(),
         email: editEmail.trim(),
         batch: editBatch,
         role: editRole,
         isActive: editStatus === 'Active'
-      } : s));
+      } : s);
+
+      setStudents(updatedStudents);
+      const userId = user?._id || user?.id || 'default';
+      localStorage.setItem(`cache_admin_students_list_${userId}`, JSON.stringify(updatedStudents));
 
       setShowEditModal(false);
     } catch (err) {
@@ -96,21 +102,35 @@ export default function AdminStudents() {
   };
 
   useEffect(() => {
+    const userId = user?._id || user?.id || 'default';
+    const cacheKey = `cache_admin_students_list_${userId}`;
+
     const loadStudents = async () => {
-      try {
+      const cachedData = localStorage.getItem(cacheKey);
+      if (cachedData) {
+        setStudents(JSON.parse(cachedData));
+        setLoading(false);
+      } else {
         setLoading(true);
+      }
+
+      try {
         const data = await api.getStudents();
-        setStudents(data || []);
+        const records = data || [];
+        setStudents(records);
+        localStorage.setItem(cacheKey, JSON.stringify(records));
       } catch (err) {
         console.error('Error fetching students:', err);
-        setError('Failed to retrieve students records.');
+        if (!cachedData) {
+          setError('Failed to retrieve students records.');
+        }
       } finally {
         setLoading(false);
       }
     };
 
     loadStudents();
-  }, []);
+  }, [user]);
 
   // Collect unique batches dynamically
   const uniqueBatches = ['All Courses', ...Array.from(new Set(students.map(s => s.batch || 'Web Development')))];

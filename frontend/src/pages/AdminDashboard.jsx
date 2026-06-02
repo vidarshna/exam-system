@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import { 
   Users, FileSpreadsheet, TrendingUp, Award, Loader2, History,
@@ -59,27 +60,41 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 export default function AdminDashboard() {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
+    const userId = user?._id || user?.id || 'default';
+    const cacheKey = `cache_admin_stats_${userId}`;
+
     const loadAdminDashboard = async () => {
-      try {
+      const cachedData = localStorage.getItem(cacheKey);
+      if (cachedData) {
+        setStats(JSON.parse(cachedData));
+        setLoading(false);
+      } else {
         setLoading(true);
+      }
+
+      try {
         const analyticsData = await api.getAnalyticsDashboard();
         setStats(analyticsData);
+        localStorage.setItem(cacheKey, JSON.stringify(analyticsData));
       } catch (err) {
         console.error('Error loading admin dashboard:', err);
-        setError('Failed to sync administrative dashboard data.');
+        if (!cachedData) {
+          setError('Failed to sync administrative dashboard data.');
+        }
       } finally {
         setLoading(false);
       }
     };
 
     loadAdminDashboard();
-  }, []);
+  }, [user]);
 
   if (loading) {
     return (

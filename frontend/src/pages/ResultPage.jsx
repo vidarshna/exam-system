@@ -49,13 +49,25 @@ export default function ResultPage() {
 
   useEffect(() => {
     const fetchResult = async () => {
-      try {
+      const cacheKey = `cache_scorecard_${id}`;
+      const cachedData = localStorage.getItem(cacheKey);
+
+      if (cachedData) {
+        setResult(JSON.parse(cachedData));
+        setLoading(false);
+      } else {
         setLoading(true);
+      }
+
+      try {
         const data = await api.getDetailedScorecard(id);
         setResult(data);
+        localStorage.setItem(cacheKey, JSON.stringify(data));
       } catch (err) {
         console.error('Error fetching result scorecard:', err);
-        setError('Failed to fetch evaluation scorecard.');
+        if (!cachedData) {
+          setError('Failed to fetch evaluation scorecard.');
+        }
       } finally {
         setLoading(false);
       }

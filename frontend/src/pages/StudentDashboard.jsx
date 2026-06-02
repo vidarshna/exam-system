@@ -62,28 +62,54 @@ export default function StudentDashboard() {
   }, [user]);
 
   useEffect(() => {
+    const userId = user?._id || user?.id || 'default';
+    const keyExams = `cache_exams_${userId}`;
+    const keyHistory = `cache_history_${userId}`;
+    const keyAnalytics = `cache_analytics_${userId}`;
+
     const loadDashboardData = async () => {
-      try {
+      const cachedExams = localStorage.getItem(keyExams);
+      const cachedHistory = localStorage.getItem(keyHistory);
+      const cachedAnalytics = localStorage.getItem(keyAnalytics);
+
+      if (cachedExams && cachedHistory && cachedAnalytics) {
+        setExams(JSON.parse(cachedExams));
+        setHistory(JSON.parse(cachedHistory));
+        setAnalytics(JSON.parse(cachedAnalytics));
+        setLoading(false);
+      } else {
         setLoading(true);
+      }
+
+      try {
         const [availableExams, attemptHistory, stats] = await Promise.all([
           api.getExams(),
           api.getStudentHistory(),
           api.getAnalyticsDashboard()
         ]);
         
+        const sortedHistory = attemptHistory.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        
         setExams(availableExams);
-        setHistory(attemptHistory.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+        setHistory(sortedHistory);
         setAnalytics(stats);
+
+        // Update local caches
+        localStorage.setItem(keyExams, JSON.stringify(availableExams));
+        localStorage.setItem(keyHistory, JSON.stringify(sortedHistory));
+        localStorage.setItem(keyAnalytics, JSON.stringify(stats));
       } catch (err) {
         console.error('Error loading student dashboard:', err);
-        setError('Failed to sync dashboard data with server.');
+        if (!cachedExams) {
+          setError('Failed to sync dashboard data with server.');
+        }
       } finally {
         setLoading(false);
       }
     };
 
     loadDashboardData();
-  }, []);
+  }, [user]);
 
   const handleStartExam = (exam) => {
     const attemptCount = history.filter(h => h.examId === exam._id && !h.reset).length;

@@ -8,7 +8,7 @@ import {
 import AdminLayout from './AdminLayout';
 
 export default function AdminQuestions() {
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
 
   const [questions, setQuestions] = useState([]);
@@ -65,22 +65,35 @@ export default function AdminQuestions() {
 
 
   // Fetch questions
-  const loadQuestions = async () => {
-    try {
+  const loadQuestions = async (skipCache = false) => {
+    const userId = user?._id || user?.id || 'default';
+    const cacheKey = `cache_admin_questions_${userId}_${categoryFilter || 'all'}_${difficultyFilter || 'all'}`;
+    const cachedData = localStorage.getItem(cacheKey);
+
+    if (cachedData && !skipCache) {
+      setQuestions(JSON.parse(cachedData));
+      setLoading(false);
+    } else {
       setLoading(true);
+    }
+
+    try {
       const data = await api.getQuestions(categoryFilter, difficultyFilter);
       setQuestions(data);
+      localStorage.setItem(cacheKey, JSON.stringify(data));
     } catch (err) {
       console.error('Error fetching questions:', err);
-      setError('Failed to fetch question bank records.');
+      if (!cachedData || skipCache) {
+        setError('Failed to fetch question bank records.');
+      }
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadQuestions();
-  }, [categoryFilter, difficultyFilter]);
+    loadQuestions(false);
+  }, [categoryFilter, difficultyFilter, user]);
 
   const openCreateModal = () => {
     setModalMode('create');
@@ -146,7 +159,7 @@ export default function AdminQuestions() {
         showToast('Question updated successfully.', 'success');
       }
       setShowModal(false);
-      loadQuestions();
+      loadQuestions(true);
     } catch (err) {
       console.error('Error saving question:', err);
       showToast(err.message || 'Failed to save question.', 'error');
@@ -164,7 +177,7 @@ export default function AdminQuestions() {
     try {
       await api.deleteQuestion(deleteConfirmId);
       showToast('Question deleted successfully.', 'success');
-      loadQuestions();
+      loadQuestions(true);
     } catch (err) {
       console.error('Error deleting question:', err);
       showToast('Failed to delete question.', 'error');
@@ -186,7 +199,7 @@ export default function AdminQuestions() {
       showToast(res.message || 'Successfully imported questions.', 'success');
       setShowImportModal(false);
       setImportJsonText('');
-      loadQuestions();
+      loadQuestions(true);
     } catch (err) {
       console.error('Error importing questions:', err);
       showToast('Error parsing JSON content. Verify formatting guidelines.', 'error');
@@ -345,7 +358,7 @@ export default function AdminQuestions() {
       setShowImportModal(false);
       setParsedQuestions([]);
       setPdfFile(null);
-      loadQuestions();
+      loadQuestions(true);
     } catch (err) {
       console.error(err);
       showToast(err.message || 'Failed to import questions.', 'error');

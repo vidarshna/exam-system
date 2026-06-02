@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import { History, Loader2, Search, SlidersHorizontal } from 'lucide-react';
 import AdminLayout from './AdminLayout';
 
@@ -24,6 +25,7 @@ const getAvatarColor = (name) => {
 };
 
 export default function AdminSubmissions() {
+  const { user } = useAuth();
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -38,21 +40,35 @@ export default function AdminSubmissions() {
   const [confirmData, setConfirmData] = useState(null);
 
   useEffect(() => {
+    const userId = user?._id || user?.id || 'default';
+    const cacheKey = `cache_admin_submissions_${userId}`;
+
     const loadSubmissions = async () => {
-      try {
+      const cachedData = localStorage.getItem(cacheKey);
+      if (cachedData) {
+        const parsed = JSON.parse(cachedData);
+        setSubmissions(parsed?.submissions || []);
+        setLoading(false);
+      } else {
         setLoading(true);
+      }
+
+      try {
         const data = await api.getAnalyticsDashboard();
         setSubmissions(data?.submissions || []);
+        localStorage.setItem(cacheKey, JSON.stringify(data));
       } catch (err) {
         console.error('Error fetching submissions:', err);
-        setError('Failed to retrieve evaluation submission logs.');
+        if (!cachedData) {
+          setError('Failed to retrieve evaluation submission logs.');
+        }
       } finally {
         setLoading(false);
       }
     };
 
     loadSubmissions();
-  }, []);
+  }, [user]);
 
   const handleAllowRetake = (id, studentName, examTitle, studentId, examId) => {
     setConfirmData({ id, studentName, examTitle, studentId, examId });
@@ -64,9 +80,24 @@ export default function AdminSubmissions() {
 
     try {
       await api.deleteSubmission(id);
-      setSubmissions(prev => prev.map(sub => 
+      const updatedSubmissions = submissions.map(sub => 
         (sub.studentId === studentId && sub.examId === examId) ? { ...sub, reset: true } : sub
-      ));
+      );
+      setSubmissions(updatedSubmissions);
+      
+      const userId = user?._id || user?.id || 'default';
+      const cacheKey = `cache_admin_submissions_${userId}`;
+      const cachedStr = localStorage.getItem(cacheKey);
+      if (cachedStr) {
+        try {
+          const cachedObj = JSON.parse(cachedStr);
+          cachedObj.submissions = updatedSubmissions;
+          localStorage.setItem(cacheKey, JSON.stringify(cachedObj));
+        } catch (e) {
+          console.error('Error updating submissions cache:', e);
+        }
+      }
+
       setConfirmData(null);
     } catch (err) {
       console.error('Error resetting exam attempt:', err);
