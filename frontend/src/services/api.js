@@ -1,3 +1,5 @@
+const BASE_URL = import.meta.env.DEV ? '' : 'https://exam-system-backend-lkm5.onrender.com';
+
 const getHeaders = () => {
   const token = localStorage.getItem('exam_token');
   return {
@@ -17,17 +19,17 @@ const handleResponse = async (res) => {
 export const api = {
   // Exams
   getExams: async () => {
-    const res = await fetch('/api/exams', { headers: getHeaders() });
+    const res = await fetch(`${BASE_URL}/api/exams` , { headers: getHeaders() });
     return handleResponse(res);
   },
 
   getExamDetails: async (id) => {
-    const res = await fetch(`/api/exams/${id}`, { headers: getHeaders() });
+    const res = await fetch(`${BASE_URL}/api/exams/${id}`, { headers: getHeaders() });
     return handleResponse(res);
   },
 
   createExam: async (examData) => {
-    const res = await fetch('/api/exams', {
+    const res = await fetch(`${BASE_URL}/api/exams` , {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(examData)
@@ -36,7 +38,7 @@ export const api = {
   },
 
   deleteExam: async (id) => {
-    const res = await fetch(`/api/exams/${id}`, {
+    const res = await fetch(`${BASE_URL}/api/exams/${id}`, {
       method: 'DELETE',
       headers: getHeaders()
     });
@@ -45,7 +47,7 @@ export const api = {
 
   // Results & Submissions
   submitExam: async (submissionData) => {
-    const res = await fetch('/api/results/submit', {
+    const res = await fetch(`${BASE_URL}/api/results/submit` , {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(submissionData)
@@ -54,23 +56,23 @@ export const api = {
   },
 
   getStudentHistory: async () => {
-    const res = await fetch('/api/results/student/me', { headers: getHeaders() });
+    const res = await fetch(`${BASE_URL}/api/results/student/me` , { headers: getHeaders() });
     return handleResponse(res);
   },
 
   getDetailedScorecard: async (id) => {
-    const res = await fetch(`/api/results/details/${id}`, { headers: getHeaders() });
+    const res = await fetch(`${BASE_URL}/api/results/details/${id}`, { headers: getHeaders() });
     return handleResponse(res);
   },
 
   getAnalyticsDashboard: async () => {
-    const res = await fetch('/api/results/analytics/dashboard', { headers: getHeaders() });
+    const res = await fetch(`${BASE_URL}/api/results/analytics/dashboard` , { headers: getHeaders() });
     return handleResponse(res);
   },
 
   // Questions (Admin)
   getQuestions: async (category = '', difficulty = '') => {
-    let url = '/api/questions';
+    let url = `${BASE_URL}/api/questions`;
     const params = [];
     if (category) params.push(`category=${encodeURIComponent(category)}`);
     if (difficulty) params.push(`difficulty=${encodeURIComponent(difficulty)}`);
@@ -81,7 +83,7 @@ export const api = {
   },
 
   createQuestion: async (questionData) => {
-    const res = await fetch('/api/questions', {
+    const res = await fetch(`${BASE_URL}/api/questions` , {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(questionData)
@@ -90,7 +92,7 @@ export const api = {
   },
 
   updateQuestion: async (id, questionData) => {
-    const res = await fetch(`/api/questions/${id}`, {
+    const res = await fetch(`${BASE_URL}/api/questions/${id}`, {
       method: 'PUT',
       headers: getHeaders(),
       body: JSON.stringify(questionData)
@@ -99,7 +101,7 @@ export const api = {
   },
 
   deleteQuestion: async (id) => {
-    const res = await fetch(`/api/questions/${id}`, {
+    const res = await fetch(`${BASE_URL}/api/questions/${id}`, {
       method: 'DELETE',
       headers: getHeaders()
     });
@@ -107,7 +109,7 @@ export const api = {
   },
 
   importQuestions: async (questionsList) => {
-    const res = await fetch('/api/questions/import', {
+    const res = await fetch(`${BASE_URL}/api/questions/import` , {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(questionsList)
@@ -117,12 +119,12 @@ export const api = {
 
   // Students Directory (Admin)
   getStudents: async () => {
-    const res = await fetch('/api/auth/students', { headers: getHeaders() });
+    const res = await fetch(`${BASE_URL}/api/auth/students` , { headers: getHeaders() });
     return handleResponse(res);
   },
 
   updateProfile: async (profileData) => {
-    const res = await fetch('/api/auth/profile', {
+    const res = await fetch(`${BASE_URL}/api/auth/profile` , {
       method: 'PUT',
       headers: getHeaders(),
       body: JSON.stringify(profileData)
@@ -131,7 +133,7 @@ export const api = {
   },
 
   forgotPassword: async (email) => {
-    const res = await fetch('/api/auth/forgot-password', {
+    const res = await fetch(`${BASE_URL}/api/auth/forgot-password` , {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email })
@@ -140,7 +142,7 @@ export const api = {
   },
 
   adminUpdateStudent: async (id, studentData) => {
-    const res = await fetch(`/api/auth/students/${id}`, {
+    const res = await fetch(`${BASE_URL}/api/auth/students/${id}`, {
       method: 'PUT',
       headers: getHeaders(),
       body: JSON.stringify(studentData)
@@ -149,12 +151,12 @@ export const api = {
   },
 
   getNotifications: async () => {
-    const res = await fetch('/api/notifications', { headers: getHeaders() });
+    const res = await fetch(`${BASE_URL}/api/notifications` , { headers: getHeaders() });
     return handleResponse(res);
   },
 
   markAllNotificationsAsRead: async () => {
-    const res = await fetch('/api/notifications/read', {
+    const res = await fetch(`${BASE_URL}/api/notifications/read` , {
       method: 'PUT',
       headers: getHeaders()
     });
@@ -162,7 +164,7 @@ export const api = {
   },
 
   markNotificationAsRead: async (id) => {
-    const res = await fetch(`/api/notifications/${id}/read`, {
+    const res = await fetch(`${BASE_URL}/api/notifications/${id}/read`, {
       method: 'PUT',
       headers: getHeaders()
     });
@@ -170,7 +172,7 @@ export const api = {
   },
 
   clearNotifications: async () => {
-    const res = await fetch('/api/notifications', {
+    const res = await fetch(`${BASE_URL}/api/notifications` , {
       method: 'DELETE',
       headers: getHeaders()
     });
@@ -178,7 +180,7 @@ export const api = {
   },
 
   deleteSubmission: async (id) => {
-    const res = await fetch(`/api/results/${id}`, {
+    const res = await fetch(`${BASE_URL}/api/results/${id}`, {
       method: 'DELETE',
       headers: getHeaders()
     });

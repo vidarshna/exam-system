@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
@@ -41,6 +41,19 @@ const getDefaultSecurityQA = (email) => {
 export default function Login() {
   const { login, register, logout } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Wake up/Pre-warm the Render backend container in the background
+    const wakeUpServer = async () => {
+      try {
+        const baseUrl = import.meta.env.DEV ? '' : 'https://exam-system-backend-lkm5.onrender.com';
+        await fetch(`${baseUrl}/api/health`);
+      } catch (err) {
+        console.warn('Silent ping to backend failed:', err);
+      }
+    };
+    wakeUpServer();
+  }, []);
 
   const [isRegister, setIsRegister] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
